@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.19;
+pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -11,10 +11,10 @@ contract RewardItem is ERC721URIStorage {
 
     constructor() ERC721("RewardItem", "TW") {}
 
-    function awardItem(address player, string memory _tokenURI)
-        public
-        returns (uint256)
-    {
+    function awardItem(
+        address player,
+        string memory _tokenURI
+    ) public returns (uint256) {
         _tokenIds.increment();
 
         uint256 newItemId = _tokenIds.current();

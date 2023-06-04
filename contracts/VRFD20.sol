@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity 0.8.18;
 
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
-
 
 contract VRFD20 is VRFConsumerBaseV2 {
     uint256 private constant ROLL_IN_PROGRESS = 42;
@@ -68,11 +67,9 @@ contract VRFD20 is VRFConsumerBaseV2 {
      *
      * @param roller address of the roller
      */
-    function rollDice(address roller)
-        public
-        onlyOwner
-        returns (uint256 requestId)
-    {
+    function rollDice(
+        address roller
+    ) public onlyOwner returns (uint256 requestId) {
         require(s_results[roller] == 0, "Already rolled");
         // Will revert if subscription is not set and funded.
         requestId = COORDINATOR.requestRandomWords(
@@ -101,10 +98,10 @@ contract VRFD20 is VRFConsumerBaseV2 {
      * @param requestId uint256
      * @param randomWords  uint256[] The random result returned by the oracle.
      */
-    function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords)
-        internal
-        override
-    {
+    function fulfillRandomWords(
+        uint256 requestId,
+        uint256[] memory randomWords
+    ) internal override {
         uint256 d20Value = (randomWords[0] % 261) + 1;
         s_results[s_rollers[requestId]] = d20Value;
         emit DiceLanded(requestId, d20Value);

@@ -2,7 +2,7 @@
 // This is a Solidity smart contract for a simple game where players can play and win rewards
 // The contract uses encryption to verify the data provided by the players
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -38,11 +38,9 @@ contract EncryptionContract {
     }
 
     // Function to decrypt encrypted data using the playedSecretKey
-    function _decryptData(bytes memory encryptedData)
-        private
-        view
-        returns (string memory)
-    {
+    function _decryptData(
+        bytes memory encryptedData
+    ) private view returns (string memory) {
         bytes memory decryptedBytes = new bytes(encryptedData.length);
 
         for (uint256 i = 0; i < encryptedData.length; i++) {
@@ -93,11 +91,9 @@ contract EncryptionContract {
         return _isDataDecryptedCorrectly(encryptedData, decryptedBytes);
     }
 
-    function _decryptDataW(bytes memory encryptedData)
-        private
-        view
-        returns (string memory)
-    {
+    function _decryptDataW(
+        bytes memory encryptedData
+    ) private view returns (string memory) {
         bytes memory decryptedBytes = new bytes(encryptedData.length);
 
         for (uint256 i = 0; i < encryptedData.length; i++) {
