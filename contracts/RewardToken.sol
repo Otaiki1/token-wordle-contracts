@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -26,4 +26,12 @@ contract RewardItem is ERC721URIStorage {
     }
 
     //redeem Item function that checks if the item exists , then burns it , and returns a bool
+    function redeemItem(uint256 itemId) public returns (bool) {
+        require(_exists(itemId), "Item does not exist");
+        require(ownerOf(itemId) == msg.sender, "Item does not belong to you");
+
+        _burn(itemId);
+
+        return true;
+    }
 }
