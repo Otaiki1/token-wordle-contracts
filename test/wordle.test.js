@@ -11,7 +11,7 @@ describe("Full Wordle Test", function () {
   //deploy our staking contract and ensure it takes an instance of the staked token
   //mint and transfer a bulk of the staking token to the Staking cntract
 
-  async function deployOneYearLockFixture() {
+  async function deployAllContracts() {
     // Contracts are deployed using the first signer/account by default
     const [owner, otherAccount] = await ethers.getSigners();
 
@@ -44,53 +44,117 @@ describe("Full Wordle Test", function () {
       stakingContract.address
     );
 
-    return { gameContract, stakingContract, owner, otherAccount };
+    //we also want to give the staking contract 95% of the token
+    const send95PercentTo = await stakingToken.send95PercentTo(
+      stakingContract.address
+    );
+    console.log(
+      "SUCCESSFULLY SENT 95 PERCENT , TXN HASH IS _____",
+      send95PercentTo.hash
+    );
+
+    return { gameContract, stakingContract, stakingToken, owner, otherAccount };
   }
 
   describe("Deployment", function () {
-    it("Should set the right state variables", async function () {
-      await loadFixture(deployOneYearLockFixture);
+    it("All deployments should work the right way ", async function () {
+      await loadFixture(deployAllContracts);
     });
-
-    //   it("Should set the right owner", async function () {
-    //     const { lock, owner } = await loadFixture(deployOneYearLockFixture);
-
-    //     expect(await lock.owner()).to.equal(owner.address);
-    //   });
-
-    //   it("Should receive and store the funds to lock", async function () {
-    //     const { lock, lockedAmount } = await loadFixture(
-    //       deployOneYearLockFixture
-    //     );
-
-    //     expect(await ethers.provider.getBalance(lock.address)).to.equal(
-    //       lockedAmount
-    //     );
-    //   });
-
-    //   it("Should fail if the unlockTime is not in the future", async function () {
-    //     // We don't use the fixture here because we want a different deployment
-    //     const latestTime = await time.latest();
-    //     const Lock = await ethers.getContractFactory("Lock");
-    //     await expect(Lock.deploy(latestTime, { value: 1 })).to.be.revertedWith(
-    //       "Unlock time should be in the future"
-    //     );
-    //   });
   });
 
-  // describe("Withdrawals", function () {
-  //   describe("Validations", function () {
-  //     it("Should revert with the right error if called too soon", async function () {
-  //       const { lock } = await loadFixture(deployOneYearLockFixture);
+  describe("Staking Functionalities", async () => {
+    it("should ensure staking contract has all state variables initialized properly", async () => {
+      const { stakingContract, stakingToken, owner, otherAccount } =
+        await loadFixture(deployAllContracts);
 
-  //       await expect(lock.withdraw()).to.be.revertedWith(
-  //         "You can't withdraw yet"
-  //       );
-  //     });
+      const stakingContractBalance = await stakingToken.balanceOf(
+        stakingContract.address
+      );
+      expect(stakingContractBalance).to.eq(95000000);
+      console.log("the stake contract has 95% of total token supply");
+      expect(await stakingContract.s_totalSupply()).to.eq(0);
+      console.log("Staking contract has 0 balance");
+      expect(await stakingContract.getStaked(owner.address)).to.eq(0);
+      console.log("users balances are initialized properly");
+    });
+
+    it("should allow user stake ", async () => {
+      const { stakingContract, stakingToken, owner, otherAccount } =
+        await loadFixture(deployAllContracts);
+
+      const ownerBalanceBeforeStaking = await stakingToken.balanceOf(
+        owner.address
+      );
+      //   console.log(ownerBalanceBeforeStaking);
+      //approve allowance
+      await stakingToken.approve(stakingContract.address, 10);
+      await stakingContract.stake(10);
+      const ownerBalanceAfterStaking = await stakingToken.balanceOf(
+        owner.address
+      );
+      expect(ownerBalanceAfterStaking.toNumber()).to.be.lt(
+        ownerBalanceBeforeStaking.toNumber()
+      );
+      console.log("user balance changed successfully");
+
+      expect(await stakingContract.getStaked(owner.address)).to.eq(10);
+      console.log("user balance updated in state variable");
+
+      expect(await stakingContract.s_totalSupply()).to.eq(10);
+      console.log("total supply updated successfully");
+
+      //   console.log(ownerBalanceAfterStaking);
+    });
+
+    it("should allow user withdraw stake", async () => {
+      const { stakingContract, stakingToken, owner, otherAccount } =
+        await loadFixture(deployAllContracts);
+
+      const ownerBalanceBeforeStaking = await stakingToken.balanceOf(
+        owner.address
+      );
+      //approve allowance
+      await stakingToken.approve(stakingContract.address, 10);
+      await stakingContract.stake(10);
+      // withdraw staked
+      await stakingContract.withdrawStaked(10);
+
+      const ownerBalanceAfterWithdrawing = await stakingToken.balanceOf(
+        owner.address
+      );
+
+      expect(ownerBalanceAfterWithdrawing.toNumber()).to.eq(
+        ownerBalanceBeforeStaking.toNumber()
+      );
+      console.log("Withdraw Successful");
+
+      expect(await stakingContract.getStaked(owner.address)).to.eq(0);
+      console.log("user balance updated in state variable");
+
+      expect(await stakingContract.s_totalSupply()).to.eq(0);
+      console.log("total supply updated successfully");
+
+      //   console.log(ownerBalanceAfterStaking);
+    });
+    it("Should emit the right events for all stake cases", async () => {
+      const { stakingContract, stakingToken, owner, otherAccount } =
+        await loadFixture(deployAllContracts);
+
+      //approve allowance
+      await stakingToken.approve(stakingContract.address, 10);
+      expect(await stakingContract.stake(10))
+        .to.emit(stakingContract, "Staked")
+        .withArgs(owner.address, 10);
+      // withdraw staked
+      expect(await stakingContract.withdrawStaked(10))
+        .to.emit(stakingContract, "StakeWithdrawn")
+        .withArgs(owner.address, 10);
+    });
+  });
 
   //     it("Should revert with the right error if called from another account", async function () {
   //       const { lock, unlockTime, otherAccount } = await loadFixture(
-  //         deployOneYearLockFixture
+  //         deployAllContracts
   //       );
 
   //       // We can increase the time in Hardhat Network
@@ -104,7 +168,7 @@ describe("Full Wordle Test", function () {
 
   //     it("Shouldn't fail if the unlockTime has arrived and the owner calls it", async function () {
   //       const { lock, unlockTime } = await loadFixture(
-  //         deployOneYearLockFixture
+  //         deployAllContracts
   //       );
 
   //       // Transactions are sent using the first signer by default
@@ -117,7 +181,7 @@ describe("Full Wordle Test", function () {
   //   describe("Events", function () {
   //     it("Should emit an event on withdrawals", async function () {
   //       const { lock, unlockTime, lockedAmount } = await loadFixture(
-  //         deployOneYearLockFixture
+  //         deployAllContracts
   //       );
 
   //       await time.increaseTo(unlockTime);
@@ -131,7 +195,7 @@ describe("Full Wordle Test", function () {
   //   describe("Transfers", function () {
   //     it("Should transfer the funds to the owner", async function () {
   //       const { lock, unlockTime, lockedAmount, owner } = await loadFixture(
-  //         deployOneYearLockFixture
+  //         deployAllContracts
   //       );
 
   //       await time.increaseTo(unlockTime);
