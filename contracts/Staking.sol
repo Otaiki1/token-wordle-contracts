@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./RewardToken.sol";
 
@@ -20,8 +19,8 @@ contract Staking is ReentrancyGuard, RewardItem {
     uint256 public constant REWARD_PERCENTAGE = 1;
 
     /** @dev Mapping from address to the amount the user has staked */
-    mapping(address => uint256) public s_balances;
-    uint256 s_totalSupply;
+    mapping(address => uint256) s_balances;
+    uint256 public s_totalSupply;
 
     modifier moreThanZero(uint256 amount) {
         if (amount == 0) {
@@ -34,6 +33,11 @@ contract Staking is ReentrancyGuard, RewardItem {
         s_stakingToken = IERC20(stakingToken);
         s_gameContract = IGameContract(_gameContract);
     }
+
+    //neccessary events
+    event Staked(address staker, uint256 amount);
+    event StakeWithdrawn(address staker, uint256 amount);
+    event RewardClaimed(address staker, uint256 _tokenId);
 
     function stake(uint256 amount) external moreThanZero(amount) {
         // keep track of how much this user has staked
@@ -52,16 +56,18 @@ contract Staking is ReentrancyGuard, RewardItem {
         if (!success) {
             revert Staking__TransferFailed();
         }
+        emit Staked(msg.sender, amount);
     }
 
-    function withdraw(uint256 amount) external moreThanZero(amount) {
-        s_balances[msg.sender] -= amount;
-        s_totalSupply -= amount;
+    function withdrawStaked(uint _amount) external moreThanZero(_amount) {
+        s_balances[msg.sender] -= _amount;
+        s_totalSupply -= _amount;
         // emit event
-        bool success = s_stakingToken.transfer(msg.sender, amount);
+        bool success = s_stakingToken.transfer(msg.sender, _amount);
         if (!success) {
             revert Withdraw__TransferFailed();
         }
+        emit StakeWithdrawn(msg.sender, _amount);
     }
 
     function claimReward(string memory _tokenURI) external {
@@ -70,10 +76,12 @@ contract Staking is ReentrancyGuard, RewardItem {
             revert Error__NotWonGame();
         }
         uint itemId = awardItem(msg.sender, _tokenURI);
-        s_gameContract.updateWinners(msg.sender, 0);
+        // s_gameContract.updateWinners(msg.sender, 0);
         if (itemId <= 0) {
             revert Staking__TransferFailed();
         }
+
+        emit RewardClaimed(msg.sender, _tokenURI);
     }
 
     // Getter for UI
