@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.18;
+pragma solidity ^0.8.0;
 
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
@@ -42,6 +42,8 @@ contract VRFD20 is VRFConsumerBaseV2 {
     mapping(uint256 => address) private s_rollers;
     // map vrf results to rollers
     mapping(address => uint256) private s_results;
+    //map users address to request time
+    mapping(address => uint256) private s_lastRequestTime;
 
     event DiceRolled(uint256 indexed requestId, address indexed roller);
     event DiceLanded(uint256 indexed requestId, uint256 indexed result);
@@ -70,6 +72,10 @@ contract VRFD20 is VRFConsumerBaseV2 {
     function rollDice(
         address roller
     ) public onlyOwner returns (uint256 requestId) {
+        require(
+            block.timestamp >= s_lastRequestTime[roller] + 1 days,
+            "Can only request once per day"
+        );
         require(s_results[roller] == 0, "Already rolled");
         // Will revert if subscription is not set and funded.
         requestId = COORDINATOR.requestRandomWords(
@@ -82,6 +88,8 @@ contract VRFD20 is VRFConsumerBaseV2 {
 
         s_rollers[requestId] = roller;
         s_results[roller] = ROLL_IN_PROGRESS;
+        s_lastRequestTime[roller] = block.timestamp;
+
         emit DiceRolled(requestId, roller);
     }
 
