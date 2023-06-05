@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.19;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -81,7 +81,7 @@ contract Staking is ReentrancyGuard, RewardItem {
             revert Staking__TransferFailed();
         }
 
-        emit RewardClaimed(msg.sender, _tokenURI);
+        emit RewardClaimed(msg.sender, itemId);
     }
 
     // Getter for UI
