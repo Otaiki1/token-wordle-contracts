@@ -4,19 +4,14 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./RewardToken.sol";
-
-import "./interfaces/IGameContract.sol";
 
 error Staking__TransferFailed();
 error Withdraw__TransferFailed();
 error Staking__NeedsMoreThanZero();
-error Error__NotWonGame();
 
-contract Staking is ReentrancyGuard, RewardItem {
+contract Staking is ReentrancyGuard {
     IERC20 public s_stakingToken;
-    IGameContract public s_gameContract;
-    uint256 public constant REWARD_PERCENTAGE = 1;
+    // IGameContract public s_gameContract;
 
     /** @dev Mapping from address to the amount the user has staked */
     mapping(address => uint256) s_balances;
@@ -29,9 +24,9 @@ contract Staking is ReentrancyGuard, RewardItem {
         _;
     }
 
-    constructor(address stakingToken, address _gameContract) {
+    constructor(address stakingToken) {
         s_stakingToken = IERC20(stakingToken);
-        s_gameContract = IGameContract(_gameContract);
+        // s_gameContract = IGameContract(_gameContract);
     }
 
     //neccessary events
@@ -70,19 +65,19 @@ contract Staking is ReentrancyGuard, RewardItem {
         emit StakeWithdrawn(msg.sender, _amount);
     }
 
-    function claimReward(string memory _tokenURI) external {
-        //update logic to check if user won
-        if (s_gameContract.winners(msg.sender) == 0) {
-            revert Error__NotWonGame();
-        }
-        uint itemId = awardItem(msg.sender, _tokenURI);
-        // s_gameContract.updateWinners(msg.sender, 0);
-        if (itemId <= 0) {
-            revert Staking__TransferFailed();
-        }
+    // function claimReward(string memory _tokenURI) external {
+    //     //update logic to check if user won
+    //     if (s_gameContract.winners(msg.sender) == 0) {
+    //         revert Error__NotWonGame();
+    //     }
+    //     uint itemId = awardItem(msg.sender, _tokenURI);
+    //     // s_gameContract.updateWinners(msg.sender, 0);
+    //     if (itemId <= 0) {
+    //         revert Staking__TransferFailed();
+    //     }
 
-        emit RewardClaimed(msg.sender, itemId);
-    }
+    //     emit RewardClaimed(msg.sender, itemId);
+    // }
 
     // Getter for UI
     function getStaked(address account) public view returns (uint256) {
