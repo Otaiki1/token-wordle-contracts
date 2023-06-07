@@ -13,15 +13,13 @@ contract VRFD20 is VRFConsumerBaseV2, EncryptionContract {
     // Your subscription ID.
     uint64 s_subscriptionId;
 
-    // Fantom coordinator. For other networks,
     // see https://docs.chain.link/docs/vrf-contracts/#configurations
-    address vrfCoordinator = 0xbd13f08b8352A3635218ab9418E340c60d6Eb418;
+    // address vrfCoordinator;
 
     // The gas lane to use, which specifies the maximum gas price to bump to.
     // For a list of available gas lanes on each network,
     // see https://docs.chain.link/docs/vrf-contracts/#configurations
-    bytes32 s_keyHash =
-        0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c;
+    bytes32 s_keyHash;
 
     // Depends on the number of requested values that you want sent to the
     // fulfillRandomWords() function. Storing each word costs about 20,000 gas,
@@ -52,17 +50,20 @@ contract VRFD20 is VRFConsumerBaseV2, EncryptionContract {
     /**
      * @notice Constructor inherits VRFConsumerBaseV2
      *
-     * @dev NETWORK: Fantom Testnet
+     * @dev NETWORK: specify upon deployment
      *
      * @param subscriptionId subscription id that this consumer contract can use
      */
     constructor(
         uint64 subscriptionId,
-        bytes32 _secretKey
+        bytes32 _secretKey,
+        address vrfCoordinator,
+        bytes32 _keyHash
     ) VRFConsumerBaseV2(vrfCoordinator) EncryptionContract(_secretKey) {
         COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
         s_owner = msg.sender;
         s_subscriptionId = subscriptionId;
+        s_keyHash = _keyHash;
     }
 
     /**
