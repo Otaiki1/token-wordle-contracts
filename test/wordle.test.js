@@ -3,8 +3,8 @@ const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 
 const PERCENT = 1;
-const PSK = ethers.utils.toUtf8Bytes("playedsecretkey"); //played secret key
-const WSK = ethers.utils.toUtf8Bytes("wonsecretkey"); //won secret key
+const REWARD_AMOUNT = 1;
+const gameSecretKey = ethers.utils.formatBytes32String("gamesecretkey"); //won secret key
 
 describe("Full Wordle Test", function () {
   //deploy staking token
@@ -22,31 +22,29 @@ describe("Full Wordle Test", function () {
       stakingToken.address
     );
 
+    const StakingContract = await ethers.getContractFactory("Staking");
+    const stakingContract = await StakingContract.deploy(stakingToken.address);
+    console.log(
+      "STAKING CONTRACT HAS BEEN DEPLOYED TO ________",
+      stakingContract.address
+    );
+
     const GameContract = await ethers.getContractFactory("GameContract");
     const gameContract = await GameContract.deploy(
       PERCENT,
+      REWARD_AMOUNT,
       stakingToken.address,
-      PSK,
-      WSK
+      stakingContract.address,
+      gameSecretKey
     );
     console.log(
       "GAME CONTRACT HAS BEEN DEPLOYED TO ________",
       gameContract.address
     );
 
-    const StakingContract = await ethers.getContractFactory("Staking");
-    const stakingContract = await StakingContract.deploy(
-      stakingToken.address,
-      gameContract.address
-    );
-    console.log(
-      "STAKING CONTRACT HAS BEEN DEPLOYED TO ________",
-      stakingContract.address
-    );
-
-    //we also want to give the staking contract 95% of the token
+    //we also want to give the game contract 95% of the token
     const send95PercentTo = await stakingToken.send95PercentTo(
-      stakingContract.address
+      gameContract.address
     );
     console.log(
       "SUCCESSFULLY SENT 95 PERCENT , TXN HASH IS _____",
@@ -58,7 +56,15 @@ describe("Full Wordle Test", function () {
 
   describe("Deployment", function () {
     it("All deployments should work the right way ", async function () {
-      await loadFixture(deployAllContracts);
+      const { gameContract, stakingToken } = await loadFixture(
+        deployAllContracts
+      );
+
+      const gameContractBalance = await stakingToken.balanceOf(
+        gameContract.address
+      );
+      expect(gameContractBalance).to.eq(95000000);
+      console.log("the gameContract has 95% of total token supply");
     });
   });
 
@@ -67,11 +73,6 @@ describe("Full Wordle Test", function () {
       const { stakingContract, stakingToken, owner, otherAccount } =
         await loadFixture(deployAllContracts);
 
-      const stakingContractBalance = await stakingToken.balanceOf(
-        stakingContract.address
-      );
-      expect(stakingContractBalance).to.eq(95000000);
-      console.log("the stake contract has 95% of total token supply");
       expect(await stakingContract.s_totalSupply()).to.eq(0);
       console.log("Staking contract has 0 balance");
       expect(await stakingContract.getStaked(owner.address)).to.eq(0);
