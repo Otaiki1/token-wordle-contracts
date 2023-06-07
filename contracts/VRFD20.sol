@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
-import "./EncryptionContract.sol"
+import "./EncryptionContract.sol";
 
 contract VRFD20 is VRFConsumerBaseV2, EncryptionContract {
     uint256 private constant ROLL_IN_PROGRESS = 42;
@@ -56,7 +56,10 @@ contract VRFD20 is VRFConsumerBaseV2, EncryptionContract {
      *
      * @param subscriptionId subscription id that this consumer contract can use
      */
-    constructor(uint64 subscriptionId, bytes memory _secretKey) VRFConsumerBaseV2(vrfCoordinator) EncryptionContract(_secretKey){
+    constructor(
+        uint64 subscriptionId,
+        bytes32 _secretKey
+    ) VRFConsumerBaseV2(vrfCoordinator) EncryptionContract(_secretKey) {
         COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
         s_owner = msg.sender;
         s_subscriptionId = subscriptionId;
@@ -121,7 +124,7 @@ contract VRFD20 is VRFConsumerBaseV2, EncryptionContract {
      * @param player address
      * @return word as a string
      */
-    function word(address player) public view returns (bytes memory) {
+    function word(address player) public view returns (bytes32) {
         require(s_results[player] != 0, "Dice not rolled");
         require(s_results[player] != ROLL_IN_PROGRESS, "Roll in progress");
         return encryptWord(getWord(s_results[player]));

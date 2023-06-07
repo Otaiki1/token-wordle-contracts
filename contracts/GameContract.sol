@@ -8,23 +8,21 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IStaking.sol";
 import "./EncryptionContract.sol";
 
-
 contract GameContract is EncryptionContract {
-
     error Error__NotPlayed();
     error Error__AlreadyPlayed();
 
     IERC20 public immutable s_stakingToken;
     uint256 public immutable REWARD_AMOUNT;
     uint256 public immutable REWARD_PERCENTAGE;
-    IStaking public immutable s_stakingContract
+    IStaking public immutable s_stakingContract;
 
     constructor(
         uint256 _rewardPercent,
         uint256 _rewardAmount,
         address _stakingToken,
-        address _stakingContract
-        bytes memory _secretKey
+        address _stakingContract,
+        bytes32 _secretKey
     ) EncryptionContract(_secretKey) {
         REWARD_PERCENTAGE = _rewardPercent;
         REWARD_AMOUNT = _rewardAmount;
@@ -35,38 +33,37 @@ contract GameContract is EncryptionContract {
     //mapping that stores winners
     address[] public winners;
     //mapping that stores users encryptedword
-    mapping(address => bytes) private userToCodedWord;
+    mapping(address => bytes32) private userToCodedWord;
     //mapping that maps users time of play
-    mapping(address => uint256) timeOfPlay
+    mapping(address => uint256) timeOfPlay;
 
-    
-
-    function startGame(bytes memory _codedWord) public{
+    function startGame(bytes32 _codedWord) public {
         //update user's word
-        userToCodedWord[msg.sender] = _codedWord; 
+        userToCodedWord[msg.sender] = _codedWord;
         //update user time
-        timeOfPlay[msg.sender] = block.timestamp
+        timeOfPlay[msg.sender] = block.timestamp;
     }
 
-    function playedGame(bytes memory _encryptedData, string memory _word) public return(bool isWon){
-        if (block.timestamp == 0 ) {
+    function playedGame(
+        bytes32 _encryptedWord,
+        string memory _word
+    ) public returns (bool isWon) {
+        if (block.timestamp == 0) {
             revert Error__NotPlayed();
         }
-        if(block.timestamp >= s_lastRequestTime[roller] + 1 days){
+        if (block.timestamp >= timeOfPlay[msg.sender] + 1 days) {
             revert Error__AlreadyPlayed();
         }
-        uint userStake  = s_stakingContract.getStaked(msg.sender);
-        uint _payAmount = (REWARD_PERCENTAGE * userStake) / 100; 
-            s_stakingToken.transfer(msg.sender, _payAmount);
+        uint userStake = s_stakingContract.getStaked(msg.sender);
+        uint _payAmount = (REWARD_PERCENTAGE * userStake) / 100;
+        s_stakingToken.transfer(msg.sender, _payAmount);
 
         //check if won
         if (isCorrect(_encryptedWord, _word)) {
-            winners.push(msg.sender)
+            winners.push(msg.sender);
             s_stakingToken.transfer(msg.sender, REWARD_AMOUNT);
             return true;
-        } 
+        }
         return false;
     }
-
-
 }
