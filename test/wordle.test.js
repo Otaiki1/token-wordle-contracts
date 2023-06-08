@@ -5,6 +5,17 @@ const { expect } = require("chai");
 const PERCENT = 1;
 const REWARD_AMOUNT = 1;
 const gameSecretKey = ethers.utils.formatBytes32String("gamesecretkey"); //won secret key
+const word = "aword";
+
+const encryptWord = (word, secretKey) => {
+  const encodedWord = ethers.utils.toUtf8Bytes(word);
+  const encodedSecretKey = ethers.utils.arrayify(secretKey);
+  const saltedWord = ethers.utils.concat([encodedWord, encodedSecretKey]);
+  const encryptedWord = ethers.utils.keccak256(saltedWord);
+  return encryptedWord;
+};
+
+const codedWord = encryptWord(word, gameSecretKey);
 
 describe("Full Wordle Test", function () {
   //deploy staking token
@@ -150,6 +161,50 @@ describe("Full Wordle Test", function () {
       expect(await stakingContract.withdrawStaked(10))
         .to.emit(stakingContract, "StakeWithdrawn")
         .withArgs(owner.address, 10);
+    });
+  });
+
+  describe("GameContract", async () => {
+    it("should ensure all state variables are deployed correctly", async () => {
+      const { gameContract } = await loadFixture(deployAllContracts);
+      const winnersArray = await gameContract.fetchWinners();
+      expect(winnersArray.length).to.eq(0);
+      expect(await gameContract.REWARD_AMOUNT()).to.eq(REWARD_AMOUNT);
+      expect(await gameContract.REWARD_PERCENTAGE()).to.eq(PERCENT);
+    });
+
+    it("should update state variables when user starts a game", async () => {
+      const { gameContract } = await loadFixture(deployAllContracts);
+
+      await gameContract.startGame(codedWord);
+
+      const [userCodedWord, userTimeOfPlay] =
+        await gameContract.fetchPlayerInfo();
+      expect(userCodedWord).to.eq(codedWord);
+      console.log(userTimeOfPlay);
+    });
+
+    it("should return true if user wins ", async () => {
+      const { gameContract } = await loadFixture(deployAllContracts);
+
+      await gameContract.startGame(codedWord);
+      const tx = await gameContract.playedGame(codedWord, word);
+      const txReceipt = await tx.wait(1);
+      const isWon = txReceipt.events[txReceipt.events.length - 1].args.isWon;
+      expect(isWon).to.eq(true);
+      const winnersArray = await gameContract.fetchWinners();
+      expect(winnersArray.length).to.eq(1);
+    });
+    it("should return false if user fails ", async () => {
+      const { gameContract } = await loadFixture(deployAllContracts);
+
+      await gameContract.startGame(codedWord);
+      const tx = await gameContract.playedGame(codedWord, "bword");
+      const txReceipt = await tx.wait(1);
+      const isWon = txReceipt.events[txReceipt.events.length - 1].args.isWon;
+      expect(isWon).to.eq(false);
+      const winnersArray = await gameContract.fetchWinners();
+      expect(winnersArray.length).to.eq(0);
     });
   });
 
