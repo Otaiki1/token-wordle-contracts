@@ -35,7 +35,6 @@ contract VRFD20 is VRFConsumerBaseV2, EncryptionContract {
     // For this example, retrieve 1 random value in one request.
     // Cannot exceed VRFCoordinatorV2.MAX_NUM_WORDS.
     uint32 numWords = 1;
-    address s_owner;
 
     // map rollers to requestIds
     mapping(uint256 => address) private s_rollers;
@@ -61,7 +60,6 @@ contract VRFD20 is VRFConsumerBaseV2, EncryptionContract {
         bytes32 _keyHash
     ) VRFConsumerBaseV2(vrfCoordinator) EncryptionContract(_secretKey) {
         COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
-        s_owner = msg.sender;
         s_subscriptionId = subscriptionId;
         s_keyHash = _keyHash;
     }
@@ -74,9 +72,7 @@ contract VRFD20 is VRFConsumerBaseV2, EncryptionContract {
      *
      * @param roller address of the roller
      */
-    function rollDice(
-        address roller
-    ) public onlyOwner returns (uint256 requestId) {
+    function rollDice(address roller) public returns (uint256 requestId) {
         require(
             block.timestamp >= s_lastRequestTime[roller] + 1 days,
             "Can only request once per day"
@@ -401,10 +397,5 @@ contract VRFD20 is VRFConsumerBaseV2, EncryptionContract {
             "turns"
         ];
         return words[id - 1];
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == s_owner);
-        _;
     }
 }
