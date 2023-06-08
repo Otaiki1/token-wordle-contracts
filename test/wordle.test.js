@@ -22,7 +22,7 @@ const GAS_PRICE_LINK = 1000000000;
 const SUBSCRIPTION_ID = 2662;
 const KEYHASH =
   "0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc";
-const VRF_SUB_FUND_AMOUNT = ethers.utils.parseEther("1");
+const VRF_SUB_FUND_AMOUNT = ethers.utils.parseEther("100");
 
 describe("Full Wordle Test", function () {
   //deploy staking token
@@ -110,6 +110,7 @@ describe("Full Wordle Test", function () {
       owner,
       otherAccount,
       vrfd20Contract,
+      vrfCoordinatorV2Mock,
     };
   }
 
@@ -258,8 +259,18 @@ describe("Full Wordle Test", function () {
 
   describe("Testing Random Number", async () => {
     it("should request a random word and get a hash", async () => {
-      const { owner, vrfd20Contract } = await loadFixture(deployAllContracts);
+      const { owner, vrfd20Contract, vrfCoordinatorV2Mock } = await loadFixture(
+        deployAllContracts
+      );
       const rollTx = await vrfd20Contract.rollDice(owner.address);
+
+      const txReceipt = await rollTx.wait(1);
+      const txId = txReceipt.events[txReceipt.events.length - 1].args.requestId;
+      // simulate callback from the oracle network
+      await vrfCoordinatorV2Mock.fulfillRandomWords(
+        txId,
+        vrfd20Contract.address
+      );
 
       const playerWord = await vrfd20Contract.word(owner.address);
 
