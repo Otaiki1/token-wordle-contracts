@@ -30,9 +30,9 @@ contract Staking is ReentrancyGuard {
     }
 
     //neccessary events
-    event Staked(address staker, uint256 amount);
-    event StakeWithdrawn(address staker, uint256 amount);
-    event RewardClaimed(address staker, uint256 _tokenId);
+    event Staked(address indexed staker, uint256 indexed amount);
+    event StakeWithdrawn(address indexed staker, uint256 indexed amount);
+    event RewardClaimed(address indexed staker, uint256 indexed _tokenId);
 
     function stake(uint256 amount) external moreThanZero(amount) {
         // keep track of how much this user has staked
