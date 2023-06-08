@@ -17,6 +17,13 @@ contract GameContract is EncryptionContract {
     uint256 public immutable REWARD_PERCENTAGE;
     IStaking public immutable s_stakingContract;
 
+    event GameStarted(address player, uint256 startTime, bytes32 codedWord);
+    event PlayedGame(
+        address indexed player,
+        bool indexed isWon,
+        uint256 indexed _amountWon
+    );
+
     constructor(
         uint256 _rewardPercent,
         uint256 _rewardAmount,
@@ -31,7 +38,7 @@ contract GameContract is EncryptionContract {
     }
 
     //mapping that stores winners
-    address[] public winners;
+    address[] private winners;
     //mapping that stores users encryptedword
     mapping(address => bytes32) private userToCodedWord;
     //mapping that maps users time of play
@@ -42,12 +49,14 @@ contract GameContract is EncryptionContract {
         userToCodedWord[msg.sender] = _codedWord;
         //update user time
         timeOfPlay[msg.sender] = block.timestamp;
+
+        emit GameStarted(msg.sender, block.timestamp, _codedWord);
     }
 
     function playedGame(
         bytes32 _encryptedWord,
         string memory _word
-    ) public returns (bool isWon) {
+    ) public returns (bool) {
         if (block.timestamp == 0) {
             revert Error__NotPlayed();
         }
@@ -58,12 +67,20 @@ contract GameContract is EncryptionContract {
         uint _payAmount = (REWARD_PERCENTAGE * userStake) / 100;
         s_stakingToken.transfer(msg.sender, _payAmount);
 
+        bool isWon = isCorrect(_encryptedWord, _word);
         //check if won
-        if (isCorrect(_encryptedWord, _word)) {
+        if (isWon) {
             winners.push(msg.sender);
             s_stakingToken.transfer(msg.sender, REWARD_AMOUNT);
-            return true;
         }
-        return false;
+        emit PlayedGame(msg.sender, isWon, _payAmount + REWARD_AMOUNT);
+    }
+
+    function fetchWinners() public view returns (address[] memory) {
+        return winners;
+    }
+
+    function fetchPlayerInfo() public view returns (bytes32, uint256) {
+        return (userToCodedWord[msg.sender], timeOfPlay[msg.sender]);
     }
 }
