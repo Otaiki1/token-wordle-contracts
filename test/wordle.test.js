@@ -5,21 +5,43 @@ const { expect } = require("chai");
 const PERCENT = 1;
 const REWARD_AMOUNT = 1;
 const gameSecretKey = ethers.utils.formatBytes32String("gamesecretkey"); //won secret key
-const word = "aword";
+const word = ["a", "w", "o", "r", "d"];
 
-const encryptWord = (word, secretKey) => {
-  const encodedWord = ethers.utils.toUtf8Bytes(word);
-  const encodedSecretKey = ethers.utils.arrayify(secretKey);
-  const saltedWord = ethers.utils.concat([encodedWord, encodedSecretKey]);
-  const encryptedWord = ethers.utils.keccak256(saltedWord);
-  return encryptedWord;
+const encryptLetters = (words, secretKey) => {
+  const encryptedLetters = [];
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+
+    for (let j = 0; j < word.length; j++) {
+      const letter = word[j];
+      const encodedLetter = ethers.utils.toUtf8Bytes(letter);
+      const encodedSecretKey = ethers.utils.arrayify(secretKey);
+      const saltedLetter = ethers.utils.concat([
+        encodedLetter,
+        encodedSecretKey,
+      ]);
+      const encryptedLetter = ethers.utils.keccak256(saltedLetter);
+      encryptedLetters.push(encryptedLetter);
+    }
+  }
+
+  return encryptedLetters;
 };
 
-const codedWord = encryptWord(word, gameSecretKey);
+const allElementsAreTrue = (array1, array2) => {
+  for (let i = 0; i < array1.length; i++) {
+    if (array1[i] != array2[i]) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const codedWord = encryptLetters(word, gameSecretKey);
 
 const BASE_FEE = ethers.utils.parseEther("1");
 const GAS_PRICE_LINK = 1000000000;
-const SUBSCRIPTION_ID = 2662;
 const KEYHASH =
   "0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc";
 const VRF_SUB_FUND_AMOUNT = ethers.utils.parseEther("100");
@@ -229,7 +251,9 @@ describe("Full Wordle Test", function () {
 
       const [userCodedWord, userTimeOfPlay] =
         await gameContract.fetchPlayerInfo();
-      expect(userCodedWord).to.eq(codedWord);
+      const isAllTrue = allElementsAreTrue(userCodedWord, codedWord);
+      expect(isAllTrue).to.eq(true);
+
       console.log(userTimeOfPlay);
     });
 
@@ -248,7 +272,13 @@ describe("Full Wordle Test", function () {
       const { gameContract } = await loadFixture(deployAllContracts);
 
       await gameContract.startGame(codedWord);
-      const tx = await gameContract.playedGame(codedWord, "bword");
+      const tx = await gameContract.playedGame(codedWord, [
+        "b",
+        "w",
+        "o",
+        "r",
+        "d",
+      ]);
       const txReceipt = await tx.wait(1);
       const isWon = txReceipt.events[txReceipt.events.length - 1].args.isWon;
       expect(isWon).to.eq(false);

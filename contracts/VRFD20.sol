@@ -116,19 +116,6 @@ contract VRFD20 is VRFConsumerBaseV2, EncryptionContract {
         emit DiceLanded(requestId, d20Value);
     }
 
-    function pickCharsFromString(
-        string memory str
-    ) public view returns (bytes32[5] memory) {
-        bytes memory strBytes = bytes(str);
-        bytes32[5] memory pickedChars;
-
-        for (uint256 i = 0; i < strBytes.length && i < 5; i++) {
-            pickedChars[i] = encryptWord(string(abi.encodePacked(strBytes[i])));
-        }
-
-        return pickedChars;
-    }
-
     /**
      * @notice Get the word assigned to the player once the address has rolled
      * @param player address
@@ -139,7 +126,7 @@ contract VRFD20 is VRFConsumerBaseV2, EncryptionContract {
         require(s_results[player] != ROLL_IN_PROGRESS, "Roll in progress");
         string memory userWord = getWord(s_results[player]);
 
-        return pickCharsFromString(userWord);
+        return encryptWord(userWord);
     }
 
     /**
